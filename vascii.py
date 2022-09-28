@@ -37,7 +37,11 @@ def main():
         for b, i in enumerate(frame):
             meh = []
             for a, x in enumerate(i):
-                sum = int(((x[0] + x[1] + x[2])/3)*contrast)
+                #sum = int(int(int(x[0] + x[1] + x[2])/3)*contrast)
+                sum = int(x[0])+int(x[1])+int(x[2])
+                sum/=3
+                sum*=contrast
+                sum = int(sum)
                 x = [sum, sum, sum]
                 i[a] = x
                 gscale.append(sum)
@@ -66,17 +70,18 @@ def img2ascii(pixels, width):
     ascii_image = [padding+new_pixels[index:index + width] for index in range(0, new_pixels_count, width)]
     ascii_image = "\n".join(ascii_image)
     sendFrame("\r"+ascii_image)
-    print("\r"+ascii_image)
+    #print("\r"+ascii_image)
 
 def sendFrame(frame):
     global send_sock
     bytesToSend = str.encode(frame)
     send_sock.sendall(bytesToSend)
 
-def recvStream():
+def recvStream(self):
     global recv_sock
-    frame = recv_sock.recv(bufferSize)
-    print(bytes.decode(frame))
+    while True:
+        frame = recv_sock.recv(bufferSize)
+        print(bytes.decode(frame))
 
 if __name__ == "__main__":
     main()

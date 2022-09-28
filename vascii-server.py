@@ -1,6 +1,6 @@
 import socket, threading
 
-localIP = "127.0.0.1"
+localIP = "0.0.0.0"
 localPortRecv = 20001
 localPortSend = 20002
 bufferSize = 102400
@@ -27,12 +27,14 @@ def main():
         threads = []
         for i in range(0,2):
             conn, client_address = recv_sock.accept()
+            print("RECV:", client_address)
             client = [[conn, client_address]]
             conn, client_address = send_sock.accept()
+            print("SEND:", client_address)
             client.append([conn, client_address])
             clients.append(client)
-        threads.append(threading.Thread(target=handleClient, args=(1,clients[0], clients[1],)))
-        threads.append(threading.Thread(target=handleClient, args=(1,clients[1], clients[0],)))
+        threads.append(threading.Thread(target=handleClient, args=(clients[0], clients[1],)))
+        threads.append(threading.Thread(target=handleClient, args=(clients[1], clients[0],)))
         for t in threads:
             t.start()
 
