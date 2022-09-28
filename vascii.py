@@ -1,6 +1,8 @@
 import cv2, time, sys, os
 from PIL import Image
  
+# USAGE: python3 vascii.py <scale (0.1:0.3)> <contrast (1:3)> <invert (0|1)>
+
 # Variables
 scale = 0.15
 contrast = 1
@@ -18,14 +20,11 @@ if len(sys.argv) > 1:
 cap = cv2.VideoCapture(0)
  
 def img2ascii(pixels, width):
-    # replace each pixel with a character from array
     chars = ["@", "$", "%", "#", "*", "+", "=", "-", ":", ".", " "]
     if invert == 1:
         chars.reverse()
     new_pixels = [chars[pixel//25] for pixel in pixels]
     new_pixels = ''.join(new_pixels)
- 
-    # split string of chars into multiple strings of length equal to new width and create a list
     padding = " " * int(((cols-width)/2))
     new_pixels_count = len(new_pixels)
     ascii_image = [padding+new_pixels[index:index + width] for index in range(0, new_pixels_count, width)]
@@ -50,7 +49,7 @@ while True:
             gscale.append(sum)
             gscale.append(sum)
         frame[b] = i
-    #cv2.imshow('Input', frame)
+    #cv2.imshow('Input', frame) # Used to show webcam output in a little window.
     img2ascii(gscale, width)
     cols = os.get_terminal_size().columns
     time.sleep(0.1)
