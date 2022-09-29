@@ -35,6 +35,10 @@ def main():
                 if len(sys.argv) > 4:
                     invert = int(sys.argv[4])
 
+    # Get VASCII server IP for video call
+    if mode == 1:
+        server_ip = str(input("Server IP: "))
+
     # Connect to webcam
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -62,14 +66,14 @@ def main():
 
         if mode == 1:
             if (width > remoteCols) or (height > remoteRows):
-                scale-=0.005
+                scale-=0.001
             elif ((width < remoteCols) or (height < remoteRows)) and not ((width == remoteCols) or (height == remoteRows)):
-                scale+=0.05
+                scale+=0.001
         else:
             if (width > cols) or (height > rows):
-                scale-=0.005
+                scale-=0.001
             elif ((width < cols) or (height < rows)) and not ((width == cols) or (height == rows)):
-                scale+=0.05
+                scale+=0.001
 
         # Convert frame to greyscale
         gscale = []
@@ -115,7 +119,7 @@ def img2ascii(pixels, width):
     if mode == 0:
         paddingSize = int(((cols-width)/2))
     else:
-        paddingSize = int(((remoteCols-width)/2))
+        paddingSize = int(((remoteCols-width+20)/2))
     padding = " " * paddingSize
     new_pixels_count = len(new_pixels)
     # Construct the final frame string
@@ -150,6 +154,7 @@ def recvStream(self):
             info = data.split(" ")
             remoteRows = int(info[1])
             remoteCols = int(info[3].split("|")[0])
+            remoteCols -= 20
             frame = arr[1]
             print('rows:', remoteRows, ' cols:', remoteCols)
             print(frame)
