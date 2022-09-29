@@ -118,10 +118,8 @@ def sendFrame(frame):
 def adjustScale():
     global send_sock, cols
     remote_scale = 0.15
-    scaleMsg = str.encode("SCALE "+str(remote_scale))
+    scaleMsg = str.encode("SCALE "+str(remote_scale)+" COLS "+str(cols)+"|")
     send_sock.sendall(scaleMsg)
-    colsMsg = str.encode("COLS "+str(cols))
-    send_sock.sendall(colsMsg)
 
 # Receive and display an ascii string image
 def recvStream(self):
@@ -130,10 +128,12 @@ def recvStream(self):
         frame = recv_sock.recv(bufferSize)
         data = bytes.decode(frame)
         if data[0:5] == "SCALE":
-            scale = float(data[6::])
-        elif data[0:4] == "COLS":
-            remoteCols = float(data[5::])
-        print(data)
+            arr = data.split("|")
+            info = data.split(" ")
+            scale = info[1]
+            remoteCols = info[3]
+            frame = arr[1]
+        print(frame)
 
 if __name__ == "__main__":
     main()
