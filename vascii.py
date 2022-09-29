@@ -14,7 +14,10 @@ invert = 0
 mode = 0
 server_ip = "127.0.0.1"
 cols = os.get_terminal_size().columns
-remoteCols = 70
+rows = os.get_terminal_size().lines
+paddingSize = 10
+remoteCols = 100
+remoteRows = 70
 bufferSize = 102400
 send_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 recv_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
@@ -22,7 +25,7 @@ recv_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 # Main function
 def main():
     # Set parameters from cmd arguments
-    global invert, contrast, scale, cols, mode
+    global invert, contrast, scale, cols, rows, mode, remoteCols, remoteRows, paddingSize
     if len(sys.argv) > 1:
         mode = int(sys.argv[1])
         if len(sys.argv) > 2:
@@ -55,6 +58,18 @@ def main():
         ret, frame = cap.read()
         frame = cv2.resize(frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
         width = len(frame[0])*2
+        height = len(frame)
+
+        if mode == 1:
+            if (width > remoteCols) or (height > remoteRows):
+                scale-=0.005
+            elif ((width < remoteCols) or (height < remoteRows)) and not ((width == remoteCols) or (height == remoteRows)):
+                scale+=0.05
+        else:
+            if (width > cols) or (height > rows):
+                scale-=0.005
+            elif ((width < cols) or (height < rows)) and not ((width == cols) or (height == rows)):
+                scale+=0.05
 
         # Convert frame to greyscale
         gscale = []
@@ -73,9 +88,12 @@ def main():
         if mode == 1:
             if cols != os.get_terminal_size().columns:
                 cols = os.get_terminal_size().columns
+                rows = os.get_terminal_size().lines
                 adjustScale()
         else:
-            cols = os.get_terminal_size().columns
+            if cols != os.get_terminal_size().columns:
+                cols = os.get_terminal_size().columns
+                rows = os.get_terminal_size().lines
         time.sleep(0.1)
         c = cv2.waitKey(1)
         if c == 27:
@@ -85,7 +103,7 @@ def main():
 
 # Convert greyscale pixel array to ascii string
 def img2ascii(pixels, width):
-    global invert, contrast, scale, cols, mode
+    global invert, contrast, scale, cols, mode, rows, remoteCols, remoteRows, paddingSize
     # ASCII art charset
     chars = ["@", "%", "&", "$", "#", "+", "=", "-", ":", ".", " "]
     if invert == 1:
@@ -95,9 +113,10 @@ def img2ascii(pixels, width):
     new_pixels = ''.join(new_pixels)
     # Padding to move the frame to the center of the terminal
     if mode == 0:
-        padding = " " * int(((cols-width)/2))
+        paddingSize = int(((cols-width)/2))
     else:
-        padding = " " * int(((remoteCols-width)/2))
+        paddingSize = int(((remoteCols-width)/2))
+    padding = " " * paddingSize
     new_pixels_count = len(new_pixels)
     # Construct the final frame string
     ascii_image = [padding+new_pixels[index:index + width] for index in range(0, new_pixels_count, width)]
@@ -116,24 +135,23 @@ def sendFrame(frame):
 
 # Adjust scale
 def adjustScale():
-    global send_sock, cols
-    remote_scale = 0.15
-    scaleMsg = str.encode("SCALE "+str(remote_scale)+" COLS "+str(cols)+"|")
+    global send_sock, cols, rows
+    scaleMsg = str.encode("ROWS "+str(rows)+" COLS "+str(cols)+"|")
     send_sock.sendall(scaleMsg)
 
 # Receive and display an ascii string image
 def recvStream(self):
-    global recv_sock, scale, remoteCols
+    global recv_sock, remoteRows, remoteCols
     while True:
         frame = recv_sock.recv(bufferSize)
         data = frame.decode('utf-8')
-        if data[0:5] == "SCALE":
+        if data[0:4] == "ROWS":
             arr = data.split("|")
             info = data.split(" ")
-            scale = float(info[1])
+            remoteRows = int(info[1])
             remoteCols = int(info[3].split("|")[0])
             frame = arr[1]
-            print('scale:', scale, ' cols:', cols)
+            print('rows:', remoteRows, ' cols:', remoteCols)
             print(frame)
         else:
             print(data)
