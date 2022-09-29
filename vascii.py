@@ -1,4 +1,4 @@
-#!/usr/share/env python3
+#!/usr/bin/env python3
 # +-------------------------------------------------------------------------------------+
 # | USAGE:                                                                              |
 # |    python3 vascii.py <mode (0|1)> <scale (0.1:0.3)> <contrast (1:3)> <invert (0|1)> |
@@ -12,8 +12,9 @@ scale = 0.15
 contrast = 1
 invert = 0
 mode = 0
-server_ip = "192.168.8.103"
+server_ip = "139.162.248.140"
 cols = os.get_terminal_size().columns
+remoteCols = 70
 bufferSize = 102400
 send_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 recv_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
@@ -21,15 +22,15 @@ recv_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 # Main function
 def main():
     # Set parameters from cmd arguments
-    global invert, contrast, scale, cols
+    global invert, contrast, scale, cols, mode
     if len(sys.argv) > 1:
-        scale = float(sys.argv[1])
+        mode = int(sys.argv[1])
         if len(sys.argv) > 2:
             scale = float(sys.argv[2])
             if len(sys.argv) > 3:
                 contrast = float(sys.argv[3])
                 if len(sys.argv) > 4:
-                    invert = float(sys.argv[4])
+                    invert = int(sys.argv[4])
 
     # Connect to webcam
     cap = cv2.VideoCapture(0)
@@ -44,6 +45,9 @@ def main():
         # Start receiver thread
         receive = threading.Thread(target=recvStream, args=(1,))
         receive.start()
+
+        # Adjust remote stream scale
+        adjustScale()
     
     # Processing loop
     while True:
@@ -66,7 +70,12 @@ def main():
                 gscale.append(sum)
             frame[b] = i
         img2ascii(gscale, width)
-        cols = os.get_terminal_size().columns
+        if mode == 1:
+            if cols != os.get_terminal_size().columns:
+                cols = os.get_terminal_size().columns
+                adjustScale()
+        else:
+            cols = os.get_terminal_size().columns
         time.sleep(0.1)
         c = cv2.waitKey(1)
         if c == 27:
@@ -76,16 +85,19 @@ def main():
 
 # Convert greyscale pixel array to ascii string
 def img2ascii(pixels, width):
-    global invert, contrast, scale, cols
+    global invert, contrast, scale, cols, mode
     # ASCII art charset
-    chars = ["@", "$", "%", "#", "*", "+", "=", "-", ":", ".", " "]
+    chars = ["@", "%", "&", "$", "#", "+", "=", "-", ":", ".", " "]
     if invert == 1:
         chars.reverse()
     # Assigning a char to each pixel
     new_pixels = [chars[pixel//25] for pixel in pixels]
     new_pixels = ''.join(new_pixels)
     # Padding to move the frame to the center of the terminal
-    padding = " " * int(((cols-width)/2))
+    if mode == 0:
+        padding = " " * int(((cols-width)/2))
+    else:
+        padding = " " * int(((remoteCols-width)/2))
     new_pixels_count = len(new_pixels)
     # Construct the final frame string
     ascii_image = [padding+new_pixels[index:index + width] for index in range(0, new_pixels_count, width)]
@@ -102,12 +114,26 @@ def sendFrame(frame):
     bytesToSend = str.encode(frame)
     send_sock.sendall(bytesToSend)
 
+# Adjust scale
+def adjustScale():
+    global send_sock, cols
+    remote_scale = 0.15
+    scaleMsg = str.encode("SCALE "+str(remote_scale))
+    send_sock.sendall(scaleMsg)
+    colsMsg = str.encode("COLS "+str(cols))
+    send_sock.sendall(colsMsg)
+
 # Receive and display an ascii string image
 def recvStream(self):
-    global recv_sock
+    global recv_sock, scale, remoteCols
     while True:
         frame = recv_sock.recv(bufferSize)
-        print(bytes.decode(frame))
+        data = bytes.decode(frame)
+        if data[0:5] == "SCALE":
+            scale = float(data[6::])
+        elif data[0:4] == "COLS":
+            remoteCols = float(data[5::])
+        print(data)
 
 if __name__ == "__main__":
     main()
