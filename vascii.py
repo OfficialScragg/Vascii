@@ -12,7 +12,7 @@ scale = 0.15
 contrast = 1
 invert = 0
 mode = 0
-server_ip = "139.162.248.140"
+server_ip = "127.0.0.1"
 cols = os.get_terminal_size().columns
 remoteCols = 70
 bufferSize = 102400
@@ -126,14 +126,17 @@ def recvStream(self):
     global recv_sock, scale, remoteCols
     while True:
         frame = recv_sock.recv(bufferSize)
-        data = bytes.decode(frame)
+        data = frame.decode('utf-8')
         if data[0:5] == "SCALE":
             arr = data.split("|")
             info = data.split(" ")
-            scale = info[1]
-            remoteCols = info[3]
+            scale = float(info[1])
+            remoteCols = int(info[3].split("|")[0])
             frame = arr[1]
-        print(frame)
+            print('scale:', scale, ' cols:', cols)
+            print(frame)
+        else:
+            print(data)
 
 if __name__ == "__main__":
     main()
