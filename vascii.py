@@ -98,10 +98,8 @@ def main():
             if cols != os.get_terminal_size().columns:
                 cols = os.get_terminal_size().columns
                 rows = os.get_terminal_size().lines
-        time.sleep(0.1)
-        c = cv2.waitKey(1)
-        if c == 27:
-            break
+        time.sleep(0.25)
+
     # Release the webcam
     cap.release()
 
@@ -119,7 +117,7 @@ def img2ascii(pixels, width):
     if mode == 0:
         paddingSize = int(((cols-width)/2))
     else:
-        paddingSize = int(((remoteCols-width+20)/2))
+        paddingSize = int(((remoteCols-width+10)/2))
     padding = " " * paddingSize
     new_pixels_count = len(new_pixels)
     # Construct the final frame string
@@ -154,9 +152,8 @@ def recvStream(self):
             info = data.split(" ")
             remoteRows = int(info[1])
             remoteCols = int(info[3].split("|")[0])
-            remoteCols -= 20
+            remoteCols -= 10
             frame = arr[1]
-            print('rows:', remoteRows, ' cols:', remoteCols)
             print(frame)
         else:
             print(data)
