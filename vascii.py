@@ -26,6 +26,7 @@ recv_sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 def main():
     # Set parameters from cmd arguments
     global invert, contrast, scale, cols, rows, mode, remoteCols, remoteRows, paddingSize
+    warnings.filterwarnings('ignore')
     if len(sys.argv) > 1:
         mode = int(sys.argv[1])
         if len(sys.argv) > 2:
@@ -111,7 +112,7 @@ def img2ascii(pixels, width):
     if invert == 1:
         chars.reverse()
     # Assigning a char to each pixel
-    new_pixels = [chars[pixel//25] for pixel in pixels]
+    new_pixels = [chars[max(0, min(int(pixel//25), len(chars)-1))] for pixel in pixels]
     new_pixels = ''.join(new_pixels)
     # Padding to move the frame to the center of the terminal
     if mode == 0:
